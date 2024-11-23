@@ -27,8 +27,15 @@ services:
       - MAX_LOGIN_ATTEMPTS=5
       - LOCKOUT_TIME_MINUTES=15
       - FLASK_RUN_PORT=5002
+      # Password requirement configurations
+      - PASSWORD_MIN_LENGTH=12
+      - PASSWORD_REQUIRE_MIXED_CASE=true
+      - PASSWORD_REQUIRE_SPECIAL=true
+      - PASSWORD_HISTORY_LIMIT=5
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    command: python run.py
 
   db:
     image: postgres:13
@@ -40,6 +47,11 @@ services:
       - POSTGRES_DB=auth_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

@@ -15,6 +15,7 @@ const HomePage = () => {
             <p>Hello, {user.username}!</p>
             <div style={styles.links}>
               <Link to="/protected" style={styles.link}>Go to Protected Page</Link>
+              <Link to="/account-settings" style={styles.link}>Account Settings</Link>
               <button onClick={logout} style={styles.button}>Logout</button>
             </div>
           </>
@@ -52,6 +53,7 @@ const styles = {
     border: '1px solid #007bff',
     borderRadius: '5px',
     transition: 'all 0.3s ease',
+    width: '200px',
   },
   button: {
     backgroundColor: '#dc3545',
@@ -62,6 +64,7 @@ const styles = {
     cursor: 'pointer',
     fontSize: '16px',
     transition: 'all 0.3s ease',
+    width: '200px',
   }
 };
 

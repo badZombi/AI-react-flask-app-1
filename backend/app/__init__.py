@@ -11,13 +11,21 @@ jwt = JWTManager()
 def create_app():
     app = Flask(__name__)
     
-    # Configuration
+    # Basic Configuration
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+    
+    # Authentication Configuration
     app.config['MAX_LOGIN_ATTEMPTS'] = int(os.getenv('MAX_LOGIN_ATTEMPTS', 5))
     app.config['LOCKOUT_TIME_MINUTES'] = int(os.getenv('LOCKOUT_TIME_MINUTES', 15))
+    
+    # Password Requirements Configuration
+    app.config['PASSWORD_MIN_LENGTH'] = int(os.getenv('PASSWORD_MIN_LENGTH', 12))
+    app.config['PASSWORD_REQUIRE_MIXED_CASE'] = os.getenv('PASSWORD_REQUIRE_MIXED_CASE', 'true').lower() == 'true'
+    app.config['PASSWORD_REQUIRE_SPECIAL'] = os.getenv('PASSWORD_REQUIRE_SPECIAL', 'true').lower() == 'true'
+    app.config['PASSWORD_HISTORY_LIMIT'] = int(os.getenv('PASSWORD_HISTORY_LIMIT', 5))
     
     # Set default config values
     app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'sqlite:///app.db')
@@ -39,5 +47,13 @@ def create_app():
         except Exception as e:
             app.logger.error(f"Error creating database tables: {e}")
             raise
+
+    @app.after_request
+    def after_request(response):
+        """Add password requirement headers to responses"""
+        response.headers['X-Password-Min-Length'] = str(app.config['PASSWORD_MIN_LENGTH'])
+        response.headers['X-Password-Require-Mixed-Case'] = str(app.config['PASSWORD_REQUIRE_MIXED_CASE']).lower()
+        response.headers['X-Password-Require-Special'] = str(app.config['PASSWORD_REQUIRE_SPECIAL']).lower()
+        return response
 
     return app

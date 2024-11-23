@@ -5,38 +5,78 @@ import { useAuth } from '../context/AuthContext';
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
-  const { login, register } = useAuth();
+  const { login, register, passwordRequirements } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Check for success message from password change
+  React.useEffect(() => {
+    if (location.state?.message) {
+      setSuccess(location.state.message);
+      // Clear the message from location state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  const renderPasswordRequirements = () => {
+    if (!passwordRequirements || !isRegistering) return null;
+
+    return (
+      <div style={styles.requirements}>
+        <h4>Password Requirements:</h4>
+        <ul>
+          <li>Minimum {passwordRequirements.min_length} characters</li>
+          {passwordRequirements.require_mixed_case && (
+            <li>Must contain both upper and lower case letters</li>
+          )}
+          {passwordRequirements.require_special && (
+            <li>Must contain at least one special character (!@#$%^&*(),.?":{}|&lt;&gt;)</li>
+          )}
+          <li>Cannot be the same as your last {passwordRequirements.history_limit} passwords</li>
+        </ul>
+      </div>
+    );
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (!username || !password) {
       setError('Please fill in all fields');
       return;
     }
 
-    const result = isRegistering
-      ? await register(username, password)
-      : await login(username, password);
+    if (isRegistering) {
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
 
-    if (result.success) {
-      if (isRegistering) {
+      const result = await register(username, password, confirmPassword);
+      if (result.success) {
         setIsRegistering(false);
-        setError('Registration successful! Please log in.');
+        setSuccess('Registration successful! Please log in.');
         setUsername('');
         setPassword('');
+        setConfirmPassword('');
       } else {
+        setError(result.error);
+      }
+    } else {
+      const result = await login(username, password);
+      if (result.success) {
         // Redirect to the protected page they tried to visit, or home
         const from = location.state?.from?.pathname || '/';
         navigate(from);
+      } else {
+        setError(result.error);
       }
-    } else {
-      setError(result.error);
     }
   };
 
@@ -46,7 +86,10 @@ const LoginPage = () => {
         <h2>{isRegistering ? 'Register' : 'Login'}</h2>
         
         {error && <div style={styles.error}>{error}</div>}
+        {success && <div style={styles.success}>{success}</div>}
         
+        {renderPasswordRequirements()}
+
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.inputGroup}>
             <label htmlFor="username">Username:</label>
@@ -69,6 +112,19 @@ const LoginPage = () => {
               style={styles.input}
             />
           </div>
+
+          {isRegistering && (
+            <div style={styles.inputGroup}>
+              <label htmlFor="confirmPassword">Confirm Password:</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                style={styles.input}
+              />
+            </div>
+          )}
           
           <button type="submit" style={styles.button}>
             {isRegistering ? 'Register' : 'Login'}
@@ -76,7 +132,14 @@ const LoginPage = () => {
         </form>
         
         <button
-          onClick={() => setIsRegistering(!isRegistering)}
+          onClick={() => {
+            setIsRegistering(!isRegistering);
+            setError('');
+            setSuccess('');
+            setUsername('');
+            setPassword('');
+            setConfirmPassword('');
+          }}
           style={styles.toggleButton}
         >
           {isRegistering
@@ -146,6 +209,21 @@ const styles = {
     borderRadius: '4px',
     textAlign: 'center',
   },
+  success: {
+    color: '#28a745',
+    marginBottom: '20px',
+    padding: '10px',
+    backgroundColor: '#d4edda',
+    borderRadius: '4px',
+    textAlign: 'center',
+  },
+  requirements: {
+    marginBottom: '20px',
+    padding: '15px',
+    backgroundColor: '#e9ecef',
+    borderRadius: '4px',
+    fontSize: '14px',
+  }
 };
 
 export default LoginPage;

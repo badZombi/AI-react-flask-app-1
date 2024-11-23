@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ProtectedPage from './pages/ProtectedPage';
+import AccountSettings from './pages/AccountSettings';
+import ChangePassword from './pages/ChangePassword';
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
@@ -19,6 +21,22 @@ function App() {
               element={
                 <PrivateRoute>
                   <ProtectedPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/account-settings"
+              element={
+                <PrivateRoute>
+                  <AccountSettings />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/change-password"
+              element={
+                <PrivateRoute>
+                  <ChangePassword />
                 </PrivateRoute>
               }
             />
