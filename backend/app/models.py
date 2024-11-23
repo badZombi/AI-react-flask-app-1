@@ -38,6 +38,9 @@ class User(db.Model):
         if password != confirm_password:
             return False, "Passwords do not match"
 
+        if not isinstance(password, str):
+            return False, "Password must be a string"
+
         # Check minimum length
         min_length = app.config.get('PASSWORD_MIN_LENGTH', 12)
         if len(password) < min_length:
@@ -59,11 +62,11 @@ class User(db.Model):
         """
         Set password with history tracking
         """
-        if not password:
-            raise ValueError('Password cannot be empty')
+        if not password or not isinstance(password, str):
+            raise ValueError('Password must be a non-empty string')
 
         # If app context is provided, check against password history
-        if app:
+        if app and hasattr(self, 'id'):
             history_limit = app.config.get('PASSWORD_HISTORY_LIMIT', 5)
             recent_passwords = self.password_history.order_by(
                 PasswordHistory.created_at.desc()
@@ -98,7 +101,7 @@ class User(db.Model):
                 db.session.delete(old_password)
 
     def check_password(self, password):
-        if not password:
+        if not password or not isinstance(password, str):
             return False
         return check_password_hash(self.password_hash, password)
 

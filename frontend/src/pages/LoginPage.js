@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,12 +9,12 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
-  const { login, register, passwordRequirements } = useAuth();
+  const { login, register, passwordRequirements, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check for success message from password change
-  React.useEffect(() => {
+  useEffect(() => {
+    // Check for messages in location state
     if (location.state?.message) {
       setSuccess(location.state.message);
       // Clear the message from location state
@@ -73,12 +73,16 @@ const LoginPage = () => {
       if (result.success) {
         // Redirect to the protected page they tried to visit, or home
         const from = location.state?.from?.pathname || '/';
-        navigate(from);
+        navigate(from, { replace: true });
       } else {
         setError(result.error);
       }
     }
   };
+
+  if (loading) {
+    return <div style={styles.loading}>Loading...</div>;
+  }
 
   return (
     <div style={styles.container}>
@@ -223,6 +227,14 @@ const styles = {
     backgroundColor: '#e9ecef',
     borderRadius: '4px',
     fontSize: '14px',
+  },
+  loading: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '100vh',
+    fontSize: '1.2rem',
+    color: '#007bff',
   }
 };
 

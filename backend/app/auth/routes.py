@@ -6,6 +6,22 @@ from ..models import User
 from .. import db
 from datetime import datetime
 
+def get_user_from_jwt():
+    """Helper function to get user from JWT identity"""
+    try:
+        user_id = get_jwt_identity()
+        if user_id is None:
+            return None, jsonify({'error': 'No user identity found'}), 401
+        
+        user = User.query.get(user_id)
+        if not user:
+            return None, jsonify({'error': 'User not found'}), 404
+        
+        return user, None, None
+    except Exception as e:
+        current_app.logger.error(f"Error getting user from JWT: {str(e)}")
+        return None, jsonify({'error': 'Authentication error'}), 401
+
 @auth_bp.route('/password-requirements', methods=['GET'])
 def get_password_requirements():
     """Get current password requirements configuration"""
@@ -60,26 +76,32 @@ def register():
 @jwt_required()
 def change_password():
     try:
+        # Get user from JWT
+        user, error_response, error_code = get_user_from_jwt()
+        if error_response:
+            return error_response, error_code
+
         data = request.get_json()
-        current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
 
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
+        current_password = str(data.get('currentPassword', ''))
+        new_password = str(data.get('newPassword', ''))
+        confirm_password = str(data.get('confirmPassword', ''))
 
-        if not data or not data.get('currentPassword') or not data.get('newPassword') or not data.get('confirmPassword'):
+        if not all([current_password, new_password, confirm_password]):
             return jsonify({
                 'error': 'Current password, new password, and password confirmation are required'
             }), 400
 
         # Verify current password
-        if not user.check_password(data['currentPassword']):
+        if not user.check_password(current_password):
             return jsonify({'error': 'Current password is incorrect'}), 401
 
         # Validate new password
         is_valid, error_message = User.validate_password(
-            data['newPassword'],
-            data['confirmPassword'],
+            new_password,
+            confirm_password,
             current_app
         )
         
@@ -88,7 +110,7 @@ def change_password():
 
         try:
             # Set password will handle history tracking
-            user.set_password(data['newPassword'], current_app)
+            user.set_password(new_password, current_app)
             db.session.commit()
             return jsonify({'message': 'Password changed successfully'}), 200
         except ValueError as e:
@@ -97,7 +119,7 @@ def change_password():
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Password change error: {str(e)}")
-        return jsonify({'error': 'Password change failed'}), 500
+        return jsonify({'error': str(e)}), 500
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -154,11 +176,9 @@ def login():
 @jwt_required()
 def protected():
     try:
-        current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
-        
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
+        user, error_response, error_code = get_user_from_jwt()
+        if error_response:
+            return error_response, error_code
         
         return jsonify({
             'message': 'Protected endpoint',
@@ -172,11 +192,9 @@ def protected():
 @jwt_required()
 def check_auth():
     try:
-        current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
-        
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
+        user, error_response, error_code = get_user_from_jwt()
+        if error_response:
+            return error_response, error_code
         
         return jsonify({
             'authenticated': True,
@@ -189,4 +207,4 @@ def check_auth():
 @auth_bp.errorhandler(Exception)
 def handle_error(error):
     current_app.logger.error(f"Unhandled error: {str(error)}")
-    return jsonify({'error': 'Internal server error'}), 500
+    return jsonify({'error': str(error)}), 500

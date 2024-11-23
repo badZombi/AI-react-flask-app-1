@@ -14,8 +14,11 @@ def create_app():
     # Basic Configuration
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-key-change-in-production')
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+    app.config['JWT_TOKEN_LOCATION'] = ['headers']
+    app.config['JWT_HEADER_NAME'] = 'Authorization'
+    app.config['JWT_HEADER_TYPE'] = 'Bearer'
     
     # Authentication Configuration
     app.config['MAX_LOGIN_ATTEMPTS'] = int(os.getenv('MAX_LOGIN_ATTEMPTS', 5))
@@ -29,7 +32,6 @@ def create_app():
     
     # Set default config values
     app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'sqlite:///app.db')
-    app.config.setdefault('JWT_SECRET_KEY', 'dev-key-change-in-production')
 
     # Initialize extensions with app context
     CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3001"]}})
@@ -55,5 +57,41 @@ def create_app():
         response.headers['X-Password-Require-Mixed-Case'] = str(app.config['PASSWORD_REQUIRE_MIXED_CASE']).lower()
         response.headers['X-Password-Require-Special'] = str(app.config['PASSWORD_REQUIRE_SPECIAL']).lower()
         return response
+
+    # JWT error handlers
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        return jsonify({
+            'error': 'Token has expired',
+            'code': 'token_expired'
+        }), 401
+
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error):
+        return jsonify({
+            'error': 'Invalid token',
+            'code': 'invalid_token'
+        }), 401
+
+    @jwt.unauthorized_loader
+    def missing_token_callback(error):
+        return jsonify({
+            'error': 'Authorization token is missing',
+            'code': 'authorization_required'
+        }), 401
+
+    @jwt.needs_fresh_token_loader
+    def token_not_fresh_callback(jwt_header, jwt_payload):
+        return jsonify({
+            'error': 'Fresh token required',
+            'code': 'fresh_token_required'
+        }), 401
+
+    @jwt.revoked_token_loader
+    def revoked_token_callback(jwt_header, jwt_payload):
+        return jsonify({
+            'error': 'Token has been revoked',
+            'code': 'token_revoked'
+        }), 401
 
     return app

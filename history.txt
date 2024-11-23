@@ -1,0 +1,48 @@
+# Chat History with Timestamps
+
+[2024-01-09 14:00:00] Create a new app. The whole thing should be powered by docker-compose. I need a frontend app made with react, a backend api made with flask and a postgres database.
+
+the react frontend should start with a simple hello world page with a link to log-in, the login page should ask for username and password.
+
+this should authenticate against a simple flask api backend. please use blueprints and sqlalchemy on the backend. the auth once a user is veified should be based on a standard JWT setup. Any pages that require auth on the frontend will check for a valid jwt or else redirect the user back to login with a message saying they need to log in to access that resource. in this situation, the user whould be returned to what they were trying to do when the auth failed.
+
+please track failed login attempts. if a user enters the wrong password more than 5 times, they should be locked out for 15 minutes. please make the number of tries as well as the timeout configurable. 
+
+please add unit testing for both the frontend and the backend.
+
+[2024-01-09 14:15:00] change the frontend to use port 3001 and the backend to use port 5002
+
+[2024-01-09 14:20:00] the backen wont run. please check the requirements. Error is "cannot import name 'url_quote' from 'werkzeug.urls'"
+
+[2024-01-09 14:25:00] turn off the automatic migrations run on startup
+
+[2024-01-09 14:30:00] add a protected page for logged in users. it is account settings. create a link there to change password and a new page where a user can enter their current password plus a new one, repeat the new one and then submit. When submitted it will change their password in the db. remember to log the old hash. once the password is changed, log them out with a confirmation message and take them to the login page.
+
+[2024-01-09 14:35:00] please update the registration so the password has to be entered twice and has requirements. All requiremends sould be configurable either as a boolean or as a numberical value. 
+
+length: 12 characters (numerical config value)
+needs upper and lower: true (boolean)
+needs at least one special character: true (boolean)
+cannot be the same as past n passwords: 5 (numerical config value)
+
+keep track of the hashes for the past n password hashes for each user in the DB for comparison when a password is changed.
+
+[2024-01-09 14:40:00] when changing the password I get this error: "in routes: Unhandled error: Subject must be a string"
+
+[2024-01-09 14:45:00] that did not fix the issue
+
+[2024-01-09 14:50:00] can you put all my commands so far into a txt file on the rot dir of the app?
+
+[2024-01-09 14:55:00] can you write my message history to a txt file in the root dir of the app?
+
+[2024-01-09 15:00:00] please make a new file in the root dir of the project called history.txt.
+
+Please add EVERY message I have sent to you in chat to this file. The full history of my requests. If you can, please add a timestamp for each.
+
+Last time I asked for my history, you left some items out.
+
+[2024-01-09 15:05:00] you still left out some of my messages, like where I asked for the new password rules
+
+[2024-01-09 15:10:00] thank you can you update this file with eachnew command I send you?
+
+Note: Timestamps are approximate as the actual timestamps were not provided in the chat history. They are added here for chronological organization.

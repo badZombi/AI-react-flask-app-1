@@ -20,18 +20,26 @@ export const AuthProvider = ({ children }) => {
       try {
         const decoded = jwt_decode(token);
         if (decoded.exp * 1000 < Date.now()) {
-          localStorage.removeItem('token');
-          setUser(null);
+          handleLogout('Session expired. Please log in again.');
         } else {
           checkAuthStatus();
         }
       } catch (error) {
-        localStorage.removeItem('token');
-        setUser(null);
+        handleLogout('Invalid session. Please log in again.');
       }
     }
     setLoading(false);
   }, []);
+
+  const handleLogout = (message = null) => {
+    localStorage.removeItem('token');
+    setUser(null);
+    if (message) {
+      navigate('/login', { state: { message } });
+    } else {
+      navigate('/login');
+    }
+  };
 
   const fetchPasswordRequirements = async () => {
     try {
@@ -57,11 +65,11 @@ export const AuthProvider = ({ children }) => {
         const data = await response.json();
         setUser(data.user);
       } else {
-        throw new Error('Authentication check failed');
+        const data = await response.json();
+        handleLogout(data.error || 'Authentication failed');
       }
     } catch (error) {
-      localStorage.removeItem('token');
-      setUser(null);
+      handleLogout('Connection error. Please try again.');
     }
   };
 
@@ -113,23 +121,36 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (currentPassword, newPassword, confirmPassword) => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
       const response = await fetch('http://localhost:5002/api/auth/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+        body: JSON.stringify({ 
+          currentPassword, 
+          newPassword, 
+          confirmPassword 
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          handleLogout('Session expired. Please log in again.');
+          return { success: false, error: 'Session expired' };
+        }
         throw new Error(data.error || 'Password change failed');
       }
 
       // On successful password change, log out the user
-      logout();
+      handleLogout('Password changed successfully. Please log in with your new password.');
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -137,9 +158,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-    navigate('/login');
+    handleLogout();
   };
 
   return (
