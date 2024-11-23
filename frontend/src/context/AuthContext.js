@@ -10,25 +10,44 @@ export const AuthProvider = ({ children }) => {
   const [passwordRequirements, setPasswordRequirements] = useState(null);
   const navigate = useNavigate();
 
+  // Check authentication status when component mounts
   useEffect(() => {
-    // Fetch password requirements
-    fetchPasswordRequirements();
-
-    // Check if token exists and is valid on app load
-    const token = localStorage.getItem('token');
-    if (token) {
+    const initAuth = async () => {
       try {
-        const decoded = jwt_decode(token);
-        if (decoded.exp * 1000 < Date.now()) {
-          handleLogout('Session expired. Please log in again.');
-        } else {
-          checkAuthStatus();
+        // Fetch password requirements
+        await fetchPasswordRequirements();
+        
+        // Check token and authentication
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const decoded = jwt_decode(token);
+            const currentTime = Date.now() / 1000;
+            
+            if (decoded.exp > currentTime) {
+              // Token is still valid, verify with backend
+              const authResult = await checkAuthStatus();
+              if (!authResult) {
+                // If backend check fails, clear auth state
+                handleLogout('Session expired. Please log in again.');
+              }
+            } else {
+              // Token is expired
+              handleLogout('Session expired. Please log in again.');
+            }
+          } catch (error) {
+            // Token is invalid
+            handleLogout('Invalid session. Please log in again.');
+          }
         }
       } catch (error) {
-        handleLogout('Invalid session. Please log in again.');
+        console.error('Auth initialization error:', error);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const handleLogout = (message = null) => {
@@ -55,21 +74,24 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) return false;
+
       const response = await fetch('http://localhost:5002/api/auth/check-auth', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
-      } else {
-        const data = await response.json();
-        handleLogout(data.error || 'Authentication failed');
+        return true;
       }
+      return false;
     } catch (error) {
-      handleLogout('Connection error. Please try again.');
+      console.error('Auth check error:', error);
+      return false;
     }
   };
 
@@ -161,6 +183,11 @@ export const AuthProvider = ({ children }) => {
     handleLogout();
   };
 
+  // Provide a method to refresh the auth state
+  const refreshAuth = async () => {
+    return await checkAuthStatus();
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -169,7 +196,8 @@ export const AuthProvider = ({ children }) => {
       register, 
       changePassword,
       passwordRequirements,
-      loading 
+      loading,
+      refreshAuth
     }}>
       {children}
     </AuthContext.Provider>

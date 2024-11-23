@@ -57,4 +57,6 @@ Last time I asked for my history, you left some items out.
 
 Is the password history happening before the user is inserted and the id is creatred or something like that?
 
+[2024-01-09 15:25:00] When I refresh on a protected page I get logged out and returned to the login screen. I would prefer that we persist the session or token or something so that I can refresh a page and stay where I am.
+
 Note: Timestamps are approximate as the actual timestamps were not provided in the chat history. They are added here for chronological organization.
