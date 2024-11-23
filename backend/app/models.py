@@ -58,15 +58,15 @@ class User(db.Model):
 
         return True, None
 
-    def set_password(self, password, app=None):
+    def set_password(self, password, app=None, check_history=True):
         """
-        Set password with history tracking
+        Set password with optional history tracking
         """
         if not password or not isinstance(password, str):
             raise ValueError('Password must be a non-empty string')
 
-        # If app context is provided, check against password history
-        if app and hasattr(self, 'id'):
+        # If app context is provided and check_history is True, check against password history
+        if app and check_history and hasattr(self, 'id'):
             history_limit = app.config.get('PASSWORD_HISTORY_LIMIT', 5)
             recent_passwords = self.password_history.order_by(
                 PasswordHistory.created_at.desc()
@@ -82,12 +82,15 @@ class User(db.Model):
         
         # Store the new password
         self.password_hash = new_hash
-        
-        # Add to password history if in app context
+
+    def add_to_password_history(self, app=None):
+        """
+        Add current password to history after user is created
+        """
         if app and hasattr(self, 'id'):
             history_entry = PasswordHistory(
                 user_id=self.id,
-                password_hash=new_hash
+                password_hash=self.password_hash
             )
             db.session.add(history_entry)
             

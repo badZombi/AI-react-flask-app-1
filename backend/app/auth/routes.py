@@ -59,9 +59,13 @@ def register():
         user.username = data['username']
         
         try:
-            # Set password will handle history tracking
-            user.set_password(data['password'], current_app)
+            # Set password without history check for new users
+            user.set_password(data['password'], current_app, check_history=False)
             db.session.add(user)
+            db.session.commit()
+            
+            # Add password to history after user is created
+            user.add_to_password_history(current_app)
             db.session.commit()
         except ValueError as e:
             return jsonify({'error': str(e)}), 400
@@ -109,8 +113,9 @@ def change_password():
             return jsonify({'error': error_message}), 400
 
         try:
-            # Set password will handle history tracking
-            user.set_password(new_password, current_app)
+            # Set password with history check for password changes
+            user.set_password(new_password, current_app, check_history=True)
+            user.add_to_password_history(current_app)
             db.session.commit()
             return jsonify({'message': 'Password changed successfully'}), 200
         except ValueError as e:

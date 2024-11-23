@@ -45,4 +45,16 @@ Last time I asked for my history, you left some items out.
 
 [2024-01-09 15:10:00] thank you can you update this file with eachnew command I send you?
 
+[2024-01-09 15:15:00] remove the password history check form the registration process. We do not need it because there can be no password history for a new user
+
+[2024-01-09 15:20:00] received this error: 
+
+"2024-11-23 17:41:23 [2024-11-23 22:41:23,517] ERROR in routes: Registration error: (psycopg2.errors.NotNullViolation) null value in column "user_id" of relation "password_history" violates not-null constraint
+2024-11-23 17:41:23 DETAIL:  Failing row contains (1, null, pbkdf2:sha256:600000$UOSQcdXWNrYObDdI$48710356f1b46b52fe4dd75dbc..., 2024-11-23 22:41:23.278802+00).
+2024-11-23 17:41:23 
+2024-11-23 17:41:23 [SQL: INSERT INTO password_history (user_id, password_hash) VALUES (%(user_id)s, %(password_hash)s) RETURNING password_history.id, password_history.created_at]
+2024-11-23 17:41:23 [parameters: {'user_id': None, 'password_hash': 'pbkdf2:sha256:600000$UOSQcdXWNrYObDdI$48710356f1b46b52fe4dd75dbc63f0cc262c3e0323317c819ebebcbedec027c4'}]"
+
+Is the password history happening before the user is inserted and the id is creatred or something like that?
+
 Note: Timestamps are approximate as the actual timestamps were not provided in the chat history. They are added here for chronological organization.
